@@ -113,7 +113,7 @@
 //   to understand its behavior and tune inputs accordingly.
 //
 //==============================================================================
-indicator("The Sequences of Fibonacci", shorttitle="📊TSoFib", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
+strategy("The Sequences of Fibonacci", shorttitle="📊TSoFib", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500, commission_value=0.075, default_qty_type=strategy.percent_of_equity, default_qty_value=2)
 
 // ===== INPUT PARAMETERS =====
 group_display = "📊 Display Settings"
@@ -162,6 +162,11 @@ c_h4 = input.color(color.new(#06B6D4, 30), "H4 Fib Color", group=group_colors_ma
 c_confluence_high = input.color(color.new(color.red, 30), "High/Critical Confluence Zone Color", group=group_colors_main, tooltip="Background color for High and Critical strength Confluence Zones.")
 c_confluence_medium = input.color(color.new(color.yellow, 50), "Medium Confluence Zone Color", group=group_colors_main, tooltip="Background color for Medium strength Confluence Zones.")
 c_confluence_low = input.color(color.new(color.gray, 70), "Low Confluence Zone Color", group=group_colors_main, tooltip="Background color for Low strength Confluence Zones. (Note: Low strength zones are not currently used for primary signal generation in stricter modes).")
+
+group_strategy = "📈 Strategy Settings"
+i_atr_len = input.int(14, "ATR Length for SL", group=group_strategy)
+i_atr_mult = input.float(2.0, "ATR Multiplier for SL", group=group_strategy, step=0.1)
+i_rr_ratio = input.float(2.0, "Risk/Reward Ratio", group=group_strategy, step=0.1)
 
 // Theme-based color selection
 get_theme_colors() =>
@@ -648,6 +653,29 @@ if long_signal_bar and short_signal_bar
 
 if long_signal_bar or short_signal_bar
     total_signals += 1
+
+// ===== STRATEGY LOGIC =====
+atr_for_sl = ta.atr(i_atr_len)
+
+if (long_signal_bar and strategy.opentrades == 0)
+    sl_distance = atr_for_sl * i_atr_mult
+    tp_distance = sl_distance * i_rr_ratio
+
+    long_sl_price = close - sl_distance
+    long_tp_price = close + tp_distance
+
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit Long", from_entry="Long", stop=long_sl_price, limit=long_tp_price)
+
+if (short_signal_bar and strategy.opentrades == 0)
+    sl_distance = atr_for_sl * i_atr_mult
+    tp_distance = sl_distance * i_rr_ratio
+
+    short_sl_price = close + sl_distance
+    short_tp_price = close - tp_distance
+
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Exit Short", from_entry="Short", stop=short_sl_price, limit=short_tp_price)
 
 // ===== SIGNAL VISUALIZATION (ONLY BUY/SELL) =====
 if i_showSignals
