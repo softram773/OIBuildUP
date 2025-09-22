@@ -1,0 +1,807 @@
+//@version=5
+//==============================================================================
+// 📚 COMPREHENSIVE USER GUIDE & CONCEPTUAL FRAMEWORK
+//==============================================================================
+//
+// 🌊 FIBONACCI FRACTAL MTF CONFLUENCE - ADAPTIVE TRADING SYSTEM
+//
+// Welcome to the Fibonacci Fractal MTF Confluence indicator, an advanced system
+// designed to identify high-probability reversal points by synthesizing
+// multi-timeframe Fibonacci structures, dynamic confluence zones, adaptive
+// momentum analysis, and market context.
+//
+// ⚡ KEY FEATURES & PHILOSOPHY:
+//
+// This indicator operates on the principle that significant market turns often
+// occur at areas where multiple technical factors align. It aims to:
+//
+// 1. DYNAMIC FIBONACCI LEVELS:
+//    - Automatically plots Fibonacci-sequence based highest highs and lowest lows
+//      (using periods like 8, 13, 21, 34, 55) across the chart.
+//    - These levels act as dynamic support and resistance.
+//
+// 2. CONFLUENCE ZONE DETECTION:
+//    - Identifies price regions where multiple derived Fibonacci retracement levels
+//      (0.382, 0.500, 0.618) from different core Fibonacci periods cluster together.
+//    - These "Confluence Zones" represent strong potential support/resistance areas.
+//    - Zones are recalculated dynamically for responsiveness.
+//
+// 3. ADAPTIVE STOCHASTIC RSI & DIVERGENCE:
+//    - Uses Stochastic RSI to gauge momentum extremes.
+//    - Features adaptive Overbought/Oversold levels for StochRSI, which adjust
+//      to the oscillator's recent volatility rather than using fixed values.
+//    - Incorporates classic StochRSI vs. Price divergence detection to spot
+//      weakening momentum at potential turning points.
+//
+// 4. QUANTUM FIELD VISUALIZATION:
+//    - Provides dynamic price bands based on an EMA center and ATR-based amplitude,
+//      influenced by the "Unified Field" metric.
+//    - Helps visualize expected price volatility and potential overextensions.
+//
+// 5. UNIFIED FIELD ANALYSIS:
+//    - A composite metric (`unified_field`) combining price momentum, volume momentum,
+//      and trend strength to give a holistic view of market energy.
+//    - `market_resonance` measures the correlation between price and volume.
+//    - `signal_quality` synthesizes these factors to assess the potential of a setup.
+//
+// 6. TIERED SIGNAL LOGIC:
+//    - Tier 1 Signals (Highest Conviction): Require StochRSI setup (exiting adaptive
+//      OB/OS), confirmed classic StochRSI divergence, a strong reversal bar pattern,
+//      rejection from a significant Confluence Zone or Fibonacci Level, and supportive
+//      market context (Unified Field).
+//    - Tier 2 Signals (Good Conviction, Optional): Activated if Tier 1 conditions
+//      are not met but other factors are exceptionally strong. Tier 2 may relax
+//      the classic divergence requirement if a simpler "divergence candidate" or
+//      an exceptionally strong level rejection and reversal bar are present.
+//
+// 7. ADAPTIVE BAR SIZE CONFIRMATION:
+//    - The definition of a "strong reversal bar" uses an ATR multiplier that can
+//      adapt to recent market volatility. In higher volatility, a bar needs to be
+//      proportionally larger to be considered significant.
+//
+// 🎯 DASHBOARD INSIGHTS:
+//
+// The dashboard provides real-time values for:
+// • UNIFIED FIELD: Overall market energy.
+// • MARKET RESONANCE: Price/volume harmony.
+// • SIGNAL QUALITY: Potential strength of the current setup.
+// • MARKET BIAS: Based on EMA(50).
+// • CONFLUENCE ZONES: Number of active zones and nearest zone details.
+// • ADAPTIVE PARAMETERS (Large Dashboard): Shows the *current calculated values*
+//   for adaptive StochRSI OB/OS levels and the adaptive ATR multiplier for bar size.
+//   This helps users understand how the indicator is adjusting to the market.
+//
+// 💡 TRADING STRATEGY WITH THIS INDICATOR:
+//
+// 1. IDENTIFY POTENTIAL TURNING POINTS:
+//    - Look for price approaching significant Confluence Zones (Medium, High, Critical)
+//      or key dynamic Fibonacci levels.
+//    - Observe StochRSI entering adaptive Overbought/Oversold zones.
+//
+// 2. WAIT FOR SIGNAL CONFIRMATION:
+//    - Tier 1 (BUY/SELL labels): These are the highest quality signals.
+//      - StochRSI exits OB/OS and shows classic divergence with price.
+//      - A strong reversal bar forms, rejecting the Confluence/Fib level.
+//      - Unified Field provides a generally supportive context.
+//    - Tier 2 Signals (if enabled): May appear if classic divergence is absent but other
+//      conditions (like an exceptionally strong reversal bar at a critical level, or a
+//      simpler divergence candidate) are met. Exercise more caution with Tier 2.
+//
+// 3. ENTRY & RISK MANAGEMENT:
+//    - Consider entering after the signal bar closes.
+//    - Place stops beyond the rejected level (e.g., beyond the high/low of the reversal
+//      bar or the other side of the Confluence Zone/Fib level).
+//    - Target potential profit areas based on other Fib levels, confluence zones, or
+//      Quantum Field bands.
+//
+// 4. USE THE DASHBOARD:
+//    - Monitor Unified Field, Resonance, and Signal Quality for overall market context.
+//    - Note the strength and proximity of Confluence Zones.
+//    - On the "Large" dashboard, observe how the adaptive parameters are adjusting.
+//      This can give insights into the current market character (e.g., if StochRSI
+//      OB/OS levels are compressing, it might indicate a shift to lower momentum).
+//
+// ⚠️ IMPORTANT CONSIDERATIONS:
+// • No indicator is a standalone trading system. Always use in conjunction with your
+//   own analysis, risk management, and understanding of market structure.
+// • "Adaptive" does not mean "predictive AI." It means the indicator's parameters
+//   adjust based on predefined rules reacting to past price data.
+// • False signals can occur, especially in strong, one-sided trends where divergences
+//   may form but not lead to significant reversals. The `context_ok_for_buy/sell`
+//   filter (based on Unified Field) attempts to mitigate this.
+// • Backtest and forward-test thoroughly on your preferred instruments and timeframes
+//   to understand its behavior and tune inputs accordingly.
+//
+//==============================================================================
+indicator("The Sequences of Fibonacci", shorttitle="📊TSoFib", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500)
+
+// ===== INPUT PARAMETERS =====
+group_display = "📊 Display Settings"
+i_showFibLevels = input.bool(true, "Show Fibonacci Levels", group=group_display, tooltip="🎯 WHAT IT IS: Toggles the visibility of dynamic Fibonacci high/low projection lines on the chart.\n\n⚡ HOW IT WORKS: These lines are based on highest highs and lowest lows over Fibonacci sequence periods (8, 13, 21, 34, 55) and act as potential dynamic support/resistance.\n\n💡 PRO TIP: Essential for identifying key price levels for potential reactions. Keep enabled for full analysis.")
+i_showConfluence = input.bool(true, "Show Confluence Zones", group=group_display, tooltip="🎯 WHAT IT IS: Toggles the visibility of Confluence Zones, which are areas where multiple derived Fibonacci retracement levels (0.382, 0.500, 0.618) from different core Fib periods cluster.\n\n⚡ HOW IT WORKS: Highlights strong potential support/resistance areas. Zones are color-coded by strength (number of converging Fibs).\n\n💡 PRO TIP: Critical for signal generation. Rejections from High/Critical zones are key components of high-quality signals.")
+i_showDashboard = input.bool(true, "Show Analysis Dashboard", group=group_display, tooltip="🎯 WHAT IT IS: Toggles the main information dashboard providing real-time metrics like Unified Field, Resonance, Signal Quality, Confluence Zone info, and (on Large size) adaptive parameter values.\n\n💡 PRO TIP: Highly recommended for a comprehensive overview of the indicator's state and market analysis. Choose size based on screen real estate.")
+i_showQuantumField = input.bool(true, "Show Quantum Field", group=group_display, tooltip="🎯 WHAT IT IS: Toggles the visibility of the Quantum Field bands – dynamic price channels based on an EMA center and ATR-based amplitude, influenced by the Unified Field.\n\n⚡ HOW IT WORKS: Visualizes expected price volatility ranges and potential overextensions. Bands widen with increased Unified Field strength/volatility.\n\n💡 PRO TIP: Useful for gauging market volatility and identifying potential areas where price might stall or reverse after extending far from the central EMA.")
+i_showWickLines = input.bool(true, "Show Wick Lines & Particles", group=group_display, tooltip="🎯 WHAT IT IS: Toggles a visual effect showing lines and particles emanating from recent price action to indicate momentum direction and strength.\n\n⚡ HOW IT WORKS: Green lines/particles appear below bars during bullish pressure; red lines/particles appear above bars during bearish pressure. Density/length can reflect momentum strength.\n\n💡 PRO TIP: Provides a quick visual cue for short-term momentum. Can be disabled for a cleaner chart if preferred.")
+i_showSignals = input.bool(true, "Show Trading Signals", group=group_display, tooltip="🎯 WHAT IT IS: Toggles the display of BUY and SELL signal labels on the chart when all conditions for a Tier 1 or Tier 2 signal are met.\n\n💡 PRO TIP: Essential for seeing the indicator's primary output. Disable only if using this script purely for its levels and dashboard without direct signal execution.")
+
+group_settings = "⚙️ Core & Signal Settings"
+i_fibSensitivity = input.float(3.0, "Fibonacci Rejection Sensitivity", minval=0.1, maxval=3.0, step=0.1, group=group_settings, tooltip="🎯 WHAT IT IS: Adjusts how precisely price needs to respect a Fibonacci level for a rejection signal.\n\n⚡ HOW IT WORKS: Scales the ATR-based allowance for price to pierce a Fib level before rejecting. A lower value means price must react very close to the Fib line (more sensitive/precise). A higher value allows for a slightly larger pierce (less sensitive/more room).\n\n📈 HIGHER VALUES (1.5-3.0): Less sensitive; price can pierce the Fib level by a larger ATR-multiple and still qualify if it rejects. Might catch more signals in volatile conditions but could be less precise.\n📉 LOWER VALUES (0.1-0.5): More sensitive; price must reject very close to the Fib level with minimal piercing. Aims for more precise entries but might miss signals where the pierce is slightly deeper.\n\n🕒 TIMEFRAME OPTIMIZATION:\n• Scalping (1-5min): 0.3-0.8 (tighter precision often needed).\n• Day Trading (15min-1H): 0.5-1.2 (balanced).\n• Swing Trading (4H-1D): 1.0-2.0 (allowing for more volatility around levels).\n\n🏦 SECTOR RECOMMENDATIONS:\n• Stocks (Less Volatile): 0.5-1.0.\n• Crypto (Volatile): 1.0-2.5.\n• Forex (Varied): 0.8-1.5.\n\n💡 PRO TIP: Start with 1.0. If signals at Fib levels seem too loose (triggering after too much piercing), decrease this value. If signals are being missed because price pierces slightly and then reverses, increase this value.")
+i_confluenceThreshold = input.int(3, "Confluence Zone Threshold", minval=2, maxval=8, group=group_settings, tooltip="🎯 WHAT IT IS: The minimum number of overlapping derived Fibonacci retracement levels required to form and display a Confluence Zone.\n\n⚡ HOW IT WORKS: A higher threshold means zones will be formed by more Fib levels, indicating stronger potential support/resistance, but fewer zones will appear. A lower threshold allows weaker confluences to be shown.\n\n📈 HIGHER VALUES (5-8): Shows only very strong confluence areas. Fewer, higher-probability zones.\n📉 LOWER VALUES (2-3): Shows more potential confluence areas, including weaker ones.\n\n💡 PRO TIP: Default of 3-4 is a good balance. Increase for higher-quality but rarer zones; decrease if you want to see more potential areas of interest.")
+i_enableTier2Signals = input.bool(true, "Enable Tier 2 Signals", group=group_settings, tooltip="🎯 WHAT IT IS: Allows the indicator to generate 'Tier 2' signals. Tier 1 signals require classic StochRSI divergence. Tier 2 signals can fire with a less strict 'divergence candidate' or even no divergence if other conditions (like an exceptionally strong reversal bar at a critical level) are met.\n\n⚡ HOW IT WORKS: If true, the script will look for Tier 2 conditions if Tier 1 conditions are not met on a bar. This can increase the number of signals.\n\n📈 ENABLED: More signals, potentially capturing turns that don't exhibit perfect classic divergence but show other strong reversal characteristics.\n📉 DISABLED: Only Tier 1 signals (requiring classic divergence) will be generated, leading to fewer but potentially higher-conviction signals.\n\n💡 PRO TIP: Start with Tier 2 enabled to see more potential setups. If signals are too frequent or noisy, disable Tier 2 to focus only on the highest-conviction classic divergence signals.")
+
+group_adaptive = "⚙️ Adaptive Signal Settings"
+i_stochAdaptiveLookback = input.int(50, "StochRSI Adaptive Lookback", minval=20, maxval=100, group=group_adaptive, tooltip="🎯 WHAT IT IS: Lookback period used to determine the recent minimum and maximum range of the Stochastic RSI (%K line).\n\n⚡ HOW IT WORKS: This range is then used to calculate adaptive Overbought (OB) and Oversold (OS) levels for the StochRSI setup condition, instead of using fixed 80/20 type levels.\n\n📈 LONGER VALUES (e.g., 75-100): Adaptive OB/OS levels will be based on a longer history of StochRSI behavior, making them more stable but potentially slower to react to shifts in StochRSI's typical range.\n📉 SHORTER VALUES (e.g., 20-40): Adaptive OB/OS levels will be more sensitive to recent changes in StochRSI's range.\n\n💡 PRO TIP: A value around 50 often provides a good balance between stability and responsiveness for adaptive levels.")
+i_stochOBPercentile = input.float(0.85, "StochRSI OB Percentile (0.7-0.95)", minval=0.7, maxval=0.95, step=0.05, group=group_adaptive, tooltip="🎯 WHAT IT IS: Defines the adaptive Overbought (OB) level as a percentile of the StochRSI's recent range (determined by 'StochRSI Adaptive Lookback').\n\n⚡ HOW IT WORKS: E.g., 0.85 means the adaptive OB level will be set at the 85th percentile of the StochRSI's values over the lookback period (closer to its recent highs).\n\n📈 HIGHER VALUES (e.g., 0.90-0.95): Stricter OB level, StochRSI needs to be higher to be considered overbought. Fewer OB setup conditions.\n📉 LOWER VALUES (e.g., 0.70-0.80): Looser OB level, StochRSI enters adaptive overbought more easily.\n\n💡 PRO TIP: Default 0.85 is common. Adjust based on how often you want the StochRSI setup to consider the oscillator as 'exiting overbought'.")
+i_stochOSPercentile = input.float(0.15, "StochRSI OS Percentile (0.05-0.3)", minval=0.05, maxval=0.3, step=0.05, group=group_adaptive, tooltip="🎯 WHAT IT IS: Defines the adaptive Oversold (OS) level as a percentile of the StochRSI's recent range.\n\n⚡ HOW IT WORKS: E.g., 0.15 means the adaptive OS level will be set at the 15th percentile of the StochRSI's values over the lookback period (closer to its recent lows).\n\n📈 HIGHER VALUES (e.g., 0.20-0.30): Looser OS level, StochRSI exits adaptive oversold more easily.\n📉 LOWER VALUES (e.g., 0.05-0.10): Stricter OS level, StochRSI needs to be lower to be considered oversold. Fewer OS setup conditions.\n\n💡 PRO TIP: Default 0.15 is common. Values for OB and OS percentiles are typically symmetrical (e.g., 0.85 and 0.15, summing to 1.0).")
+i_adaptiveAtrEnabled = input.bool(true, "Enable Adaptive ATR Bar Size", group=group_adaptive, tooltip="🎯 WHAT IT IS: If true, the ATR multiplier used for confirming the size of a 'reversal bar' will adjust dynamically based on recent market volatility.\n\n⚡ HOW IT WORKS: Compares short-term ATR to long-term average ATR. If current volatility is high, it might slightly reduce the required ATR multiple for bar size (as bars are naturally larger). If volatility is low, it might slightly increase it to ensure the bar is truly significant.\n\n💡 PRO TIP: Enabling this can help the signal logic adapt to changing market conditions. If disabled, the 'Base Bar Size ATR Multiplier' is used directly.")
+i_baseBarSizeAtrMult = input.float(0.6, "Base Bar Size ATR Multiplier", group=group_adaptive, minval=0.1, step=0.1, tooltip="🎯 WHAT IT IS: The base multiplier for ATR used to confirm if a reversal bar has a significant range. E.g., bar range must be > ATR * this_multiplier.\n\n⚡ HOW IT WORKS: If 'Enable Adaptive ATR Bar Size' is off, this value is used directly. If adaptive ATR is on, this value serves as the starting point before adaptive adjustments.\n\n📈 HIGHER VALUES (e.g., 0.8-1.0): Requires a larger bar range for confirmation, leading to fewer but potentially stronger reversal bar signals.\n📉 LOWER VALUES (e.g., 0.3-0.5): Allows smaller bars to qualify as reversal bars, potentially increasing signal frequency but also noise.\n\n💡 PRO TIP: Default 0.6 is a moderate value. Adjust based on how much 'conviction' you want to see in the reversal bar's size.")
+
+group_dashboard_main = "📊 Dashboard Display"
+i_dashPosition = input.string("Top Right", "Dashboard Position", options=["Top Left", "Top Right", "Bottom Left", "Bottom Right"], group=group_dashboard_main, tooltip="Sets the on-chart position of the main analysis dashboard.")
+i_dashSize = input.string("Normal", "Dashboard Size", options=["Small", "Normal", "Large"], group=group_dashboard_main, tooltip="Controls the amount of information displayed on the dashboard.\n- Small: Core metrics only.\n- Normal: Standard set of metrics.\n- Large: All available metrics including current adaptive parameter values.")
+
+group_tf = "⏳ Timeframe Selection for Fibs"
+i_useM1 = input.bool(true, "M1 (Fib 1)", group=group_tf, tooltip="Include M1-based Fibonacci period (8 bars) in calculations and display.")
+i_useM5 = input.bool(true, "M5 (Fib 3)", group=group_tf, tooltip="Include M5-based Fibonacci period (13 bars) in calculations and display.") 
+i_useM15 = input.bool(true, "M15 (Fib 5)", group=group_tf, tooltip="Include M15-based Fibonacci period (21 bars) in calculations and display.")
+i_useM30 = input.bool(true, "M30 (Fib 8)", group=group_tf, tooltip="Include M30-based Fibonacci period (34 bars) in calculations and display.")
+i_useH1 = input.bool(true, "H1 (Fib 13)", group=group_tf, tooltip="Include H1-based Fibonacci period (55 bars) in calculations and display.")
+i_useH4 = input.bool(true, "H4 (Fib 21)", group=group_tf, tooltip="Include H4-based Fibonacci period (e.g., 89 bars, conceptually, actual period based on available data for chart timeframe) in calculations and display. Note: Actual lookback for H4 derived Fibs uses a longer fixed period (e.g., 55 or more) on the current chart's timeframe to approximate an H4 perspective without explicit MTF calls for the Fib levels themselves.")
+
+group_visuals_main = "🎨 Visual Theme & Transparency"
+i_visualTheme = input.string("Holographic", "Visual Theme", options=["Quantum", "Holographic", "Crystalline", "Plasma"], group=group_visuals_main, tooltip="Selects the color palette for the Quantum Field bands and other themed elements.")
+i_visualTransparency = input.int(85, "Visual Transparency (%)", minval=50, maxval=95, group=group_visuals_main, tooltip="Controls the transparency of the Quantum Field bands and Wick Lines. Higher value = more transparent.")
+
+group_colors_main = "🎨 Element Colors"
+c_m1 = input.color(color.new(#3B82F6, 30), "M1 Fib Color", group=group_colors_main, tooltip="Color for Fibonacci levels derived from the M1 conceptual timeframe (shortest period).")
+c_m5 = input.color(color.new(#8B5CF6, 30), "M5 Fib Color", group=group_colors_main, tooltip="Color for Fibonacci levels derived from the M5 conceptual timeframe.")
+c_m15 = input.color(color.new(#F59E0B, 30), "M15 Fib Color", group=group_colors_main, tooltip="Color for Fibonacci levels derived from the M15 conceptual timeframe.")
+c_m30 = input.color(color.new(#10B981, 30), "M30 Fib Color", group=group_colors_main, tooltip="Color for Fibonacci levels derived from the M30 conceptual timeframe.")
+c_h1 = input.color(color.new(#EF4444, 30), "H1 Fib Color", group=group_colors_main, tooltip="Color for Fibonacci levels derived from the H1 conceptual timeframe.")
+c_h4 = input.color(color.new(#06B6D4, 30), "H4 Fib Color", group=group_colors_main, tooltip="Color for Fibonacci levels derived from the H4 conceptual timeframe (longest period).")
+c_confluence_high = input.color(color.new(color.red, 30), "High/Critical Confluence Zone Color", group=group_colors_main, tooltip="Background color for High and Critical strength Confluence Zones.")
+c_confluence_medium = input.color(color.new(color.yellow, 50), "Medium Confluence Zone Color", group=group_colors_main, tooltip="Background color for Medium strength Confluence Zones.")
+c_confluence_low = input.color(color.new(color.gray, 70), "Low Confluence Zone Color", group=group_colors_main, tooltip="Background color for Low strength Confluence Zones. (Note: Low strength zones are not currently used for primary signal generation in stricter modes).")
+
+// Theme-based color selection
+get_theme_colors() =>
+    switch i_visualTheme
+        "Holographic" => [color.new(#00ffff, 20), color.new(#ff00ff, 20), color.new(#ffff00, 20), color.new(#00ff00, 20)]
+        "Crystalline" => [color.new(#9370db, 20), color.new(#6a5acd, 20), color.new(#483d8b, 20), color.new(#2e2b5f, 20)]
+        "Plasma" => [color.new(#da70d6, 20), color.new(#ba55d3, 20), color.new(#8b008b, 20), color.new(#ff1493, 20)]
+        => [color.new(#9400d3, 20), color.new(#7b00b0, 20), color.new(#5e0087, 20), color.new(#40005e, 20)]
+
+[theme_color1, theme_color2, theme_color3, theme_color4] = get_theme_colors()
+
+// ===== TYPE DEFINITIONS =====
+type ConfluenceZone
+    float price
+    int strength
+    string level
+    array<string> timeframes
+
+// ===== GLOBAL VARIABLES =====
+var array<ConfluenceZone> confluenceZones = array.new<ConfluenceZone>()
+var float nearestZonePrice = na 
+var float nearestZoneDistance = 999999.0 
+var string nearestZoneStrength = "" 
+var float nearest_confluence_zone_upper_boundary = na
+var float nearest_confluence_zone_lower_boundary = na
+
+var float unified_field = 0.0
+var float market_resonance = 0.0
+var float signal_quality = 0.0
+var string market_bias = "NEUTRAL"
+var int total_signals = 0
+var int winning_signals = 0 
+
+// Core calculations
+atr_value = ta.atr(14)
+ema_50 = ta.ema(close, 50)
+macd_line = ta.ema(close, 12) - ta.ema(close, 26)
+signal_line = ta.ema(macd_line, 9)
+momentum = ta.mom(close, 10)
+volume_sma = ta.sma(volume, 20)
+
+// Pre-calculate all Fibonacci levels
+fib8_high = ta.highest(high, 8)
+fib8_low = ta.lowest(low, 8)
+fib13_high = ta.highest(high, 13)
+fib13_low = ta.lowest(low, 13)
+fib21_high = ta.highest(high, 21)
+fib21_low = ta.lowest(low, 21)
+fib34_high = ta.highest(high, 34)
+fib34_low = ta.lowest(low, 34)
+fib55_high = ta.highest(high, 55)
+fib55_low = ta.lowest(low, 55)
+
+var array<float> fib_level_highs = array.from(fib8_high, fib13_high, fib21_high, fib34_high, fib55_high)
+var array<float> fib_level_lows = array.from(fib8_low, fib13_low, fib21_low, fib34_low, fib55_low)
+
+if barstate.isrealtime or barstate.isconfirmed
+    array.set(fib_level_highs, 0, fib8_high)
+    array.set(fib_level_highs, 1, fib13_high)
+    array.set(fib_level_highs, 2, fib21_high)
+    array.set(fib_level_highs, 3, fib34_high)
+    array.set(fib_level_highs, 4, fib55_high)
+
+    array.set(fib_level_lows, 0, fib8_low)
+    array.set(fib_level_lows, 1, fib13_low)
+    array.set(fib_level_lows, 2, fib21_low)
+    array.set(fib_level_lows, 3, fib34_low)
+    array.set(fib_level_lows, 4, fib55_low)
+
+// Market calculations 
+rsi_for_unified_field = ta.rsi(close, 14) 
+price_momentum = (close - close[10]) / close[10] * 100
+volume_momentum = (volume - volume_sma) / volume_sma
+trend_strength = math.abs(ta.ema(close, 21) - ta.ema(close, 55)) / close
+unified_field := (price_momentum * 0.4 + volume_momentum * 20 + trend_strength * 100) / 3
+market_resonance := math.abs(ta.correlation(close, volume, 14))
+signal_quality := (math.abs(unified_field) / 10 + market_resonance + (1 - math.abs(rsi_for_unified_field - 50) / 50)) / 3
+market_bias := close > ema_50 ? "BULLISH" : close < ema_50 ? "BEARISH" : "NEUTRAL"
+
+// ===== QUANTUM FIELD VISUALIZATION =====
+field_center = ta.ema(close, 13)
+field_amplitude = atr_value * (1 + math.abs(unified_field) / 10)
+q0_upper = i_showQuantumField ? field_center + field_amplitude * 0.618 : na
+q0_lower = i_showQuantumField ? field_center - field_amplitude * 0.618 : na
+q1_upper = i_showQuantumField ? field_center + field_amplitude * 1.0 : na
+q1_lower = i_showQuantumField ? field_center - field_amplitude * 1.0 : na
+q2_upper = i_showQuantumField ? field_center + field_amplitude * 1.618 : na
+q2_lower = i_showQuantumField ? field_center - field_amplitude * 1.618 : na
+p_q0_u = plot(q0_upper, color=color.new(theme_color1, i_visualTransparency), title="Q⁰ Upper") 
+p_q0_l = plot(q0_lower, color=color.new(theme_color1, i_visualTransparency), title="Q⁰ Lower") 
+fill(p_q0_u, p_q0_l, color=color.new(theme_color1, i_visualTransparency + 5 > 95 ? 95 : i_visualTransparency + 5))
+p_q1_u = plot(q1_upper, color=color.new(theme_color2, i_visualTransparency + 5 > 95 ? 95 : i_visualTransparency + 5), title="Q¹ Upper")
+p_q1_l = plot(q1_lower, color=color.new(theme_color2, i_visualTransparency + 5 > 95 ? 95 : i_visualTransparency + 5), title="Q¹ Lower")
+fill(p_q1_u, p_q1_l, color=color.new(theme_color2, i_visualTransparency + 10 > 95 ? 95 : i_visualTransparency + 10))
+p_q2_u = plot(q2_upper, color=color.new(theme_color3, i_visualTransparency + 10 > 95 ? 95 : i_visualTransparency + 10), title="Q² Upper") 
+p_q2_l = plot(q2_lower, color=color.new(theme_color3, i_visualTransparency + 10 > 95 ? 95 : i_visualTransparency + 10), title="Q² Lower")
+fill(p_q2_u, p_q2_l, color=color.new(theme_color3, i_visualTransparency + 15 > 95 ? 95 : i_visualTransparency + 15))
+
+// ===== WICK LINES VISUALIZATION =====
+if i_showWickLines
+    flow_strength = math.max(0.3, math.abs(unified_field) / 10)
+    is_bullish_pressure = close > close[1] and momentum > 0
+    is_bearish_pressure = close < close[1] and momentum < 0
+    wick_color = is_bullish_pressure ? color.red : is_bearish_pressure ? color.green : color.white
+    base_transparency = 100 - (100 - i_visualTransparency)
+    beam_width = math.round(flow_strength * 8) + 2   
+    for i = 1 to 8 
+        if bar_index > i
+            alpha = base_transparency + 30 + i * 8
+            beam_thickness = math.max(1, beam_width - i)
+            line_color = color.new(wick_color, math.min(85, alpha))
+            line.new(bar_index - i, close[i], bar_index, close, color=line_color, width=beam_thickness, style=line.style_solid)
+    for i = 1 to 6 
+        if bar_index > i and i % 2 == 0
+            particle_size = flow_strength > 0.7 ? size.small : size.tiny
+            particle_color = color.new(wick_color, math.min(50, base_transparency))
+            label.new(bar_index - i, (close + close[i]) / 2, "●", color=color.new(color.white, 100), textcolor=particle_color, style=label.style_none, size=particle_size)
+
+// ===== FIBONACCI GRID VISUALIZATION =====
+if i_showFibLevels
+    fib_periods_display = array.from(8,13,21,34,55)
+    fib_highs_display_arr = array.from(fib8_high,fib13_high,fib21_high,fib34_high,fib55_high) 
+    fib_lows_display_arr = array.from(fib8_low,fib13_low,fib21_low,fib34_low,fib55_low)    
+    
+    map_period_to_tf_name = map.new<int, string>()
+    map.put(map_period_to_tf_name, 8, "M1")
+    map.put(map_period_to_tf_name, 13, "M5")
+    map.put(map_period_to_tf_name, 21, "M15")
+    map.put(map_period_to_tf_name, 34, "M30")
+    map.put(map_period_to_tf_name, 55, "H1")
+
+    fib_colors_arr = array.from(c_m1,c_m5,c_m15,c_m30,c_h1) 
+    
+    var array<line> fibHighGlowLines = array.new<line>()
+    var array<line> fibHighQuantumLines = array.new<line>()
+    var array<line> fibLowGlowLines = array.new<line>()
+    var array<line> fibLowQuantumLines = array.new<line>()
+    var array<label> fibHighLabels = array.new<label>()
+    var array<label> fibLowLabels = array.new<label>()
+    
+    if barstate.isconfirmed
+        for l_item in fibHighGlowLines 
+            line.delete(l_item)
+        for l_item in fibHighQuantumLines 
+            line.delete(l_item)
+        for l_item in fibLowGlowLines 
+            line.delete(l_item)
+        for l_item in fibLowQuantumLines 
+            line.delete(l_item)
+        for lbl_item in fibHighLabels 
+            label.delete(lbl_item)
+        for lbl_item in fibLowLabels 
+            label.delete(lbl_item)
+        
+        array.clear(fibHighGlowLines)
+        array.clear(fibHighQuantumLines)
+        array.clear(fibLowGlowLines)
+        array.clear(fibLowQuantumLines)
+        array.clear(fibHighLabels)
+        array.clear(fibLowLabels)
+        
+        left_boundary = bar_index - 35 
+        right_boundary = bar_index + 40 
+        
+        used_positions = array.new<float>()
+        min_spacing = atr_value * 0.5
+        
+        for i_fib_disp = 0 to array.size(fib_periods_display) - 1 
+            period = array.get(fib_periods_display, i_fib_disp)
+            fib_tf_assoc = map.get(map_period_to_tf_name, period) 
+            fib_tf_assoc_str = na(fib_tf_assoc) ? "" : " (" + fib_tf_assoc + ")" 
+
+            fib_line_color = array.get(fib_colors_arr, i_fib_disp) 
+            base_alpha = 60 + i_fib_disp * 8
+            glow_alpha = 75 + i_fib_disp * 5
+            
+            hi_val_disp = array.get(fib_highs_display_arr, i_fib_disp) 
+            if not na(hi_val_disp)
+                array.push(fibHighGlowLines, line.new(left_boundary, hi_val_disp, right_boundary, hi_val_disp, color=color.new(color.white, glow_alpha), width=3))
+                array.push(fibHighQuantumLines, line.new(left_boundary, hi_val_disp, right_boundary, hi_val_disp, color=color.new(fib_line_color, base_alpha), width=1, style=line.style_dotted))
+                can_place_label = true
+                if array.size(used_positions) > 0
+                    for j_pos = 0 to array.size(used_positions) - 1 
+                        if math.abs(hi_val_disp - array.get(used_positions, j_pos)) < min_spacing
+                            can_place_label := false
+                            break // Corrected
+                if can_place_label
+                    price_distance = (hi_val_disp - close) / atr_value
+                    fib_impact = unified_field - (price_distance * 2) 
+                    strength_val = math.abs(fib_impact) / 5          
+                    topo_class = strength_val > 1.5 ? "III" : strength_val > 1.0 ? "II" : strength_val > 0.5 ? "I" : "0"
+                    icon_char = strength_val > 1.5 ? " ⚡" : strength_val > 1.0 ? " ●" : strength_val > 0.5 ? " ◐" : " ○"
+                    label_text = "F" + str.tostring(period) + " [" + topo_class + "] " + str.tostring(hi_val_disp, syminfo.mintick == 0.01 ? "#.##" : syminfo.mintick == 0.001 ? "#.###" : "#.#####") + fib_tf_assoc_str + icon_char
+                    label_bg_color = strength_val > 1.5 ? color.new(c_confluence_high, 75) : strength_val > 1.0 ? color.new(fib_line_color, 80) : color.new(color.gray, 85)
+                    label_text_color = strength_val > 1.0 ? color.white : fib_line_color
+                    array.push(fibHighLabels, label.new(right_boundary + 1, hi_val_disp, label_text, color=label_bg_color, textcolor=label_text_color, style=label.style_label_left, size=size.small))
+                    array.push(used_positions, hi_val_disp)
+            
+            lo_val_disp = array.get(fib_lows_display_arr, i_fib_disp) 
+            if not na(lo_val_disp)
+                array.push(fibLowGlowLines, line.new(left_boundary, lo_val_disp, right_boundary, lo_val_disp, color=color.new(color.white, glow_alpha), width=3))
+                array.push(fibLowQuantumLines, line.new(left_boundary, lo_val_disp, right_boundary, lo_val_disp, color=color.new(fib_line_color, base_alpha), width=1, style=line.style_dotted))
+                can_place_label = true
+                if array.size(used_positions) > 0
+                    for j_pos = 0 to array.size(used_positions) - 1 
+                        if math.abs(lo_val_disp - array.get(used_positions, j_pos)) < min_spacing
+                            can_place_label := false
+                            break // Corrected
+                if can_place_label
+                    price_distance = (close - lo_val_disp) / atr_value
+                    fib_impact = unified_field + (price_distance * 2) 
+                    strength_val = math.abs(fib_impact) / 5          
+                    topo_class = strength_val > 1.5 ? "III" : strength_val > 1.0 ? "II" : strength_val > 0.5 ? "I" : "0"
+                    icon_char = strength_val > 1.5 ? " ⚡" : strength_val > 1.0 ? " ●" : strength_val > 0.5 ? " ◐" : " ○"
+                    label_text = "F" + str.tostring(period) + " [" + topo_class + "] " + str.tostring(lo_val_disp, syminfo.mintick == 0.01 ? "#.##" : syminfo.mintick == 0.001 ? "#.###" : "#.#####") + fib_tf_assoc_str + icon_char
+                    label_bg_color = strength_val > 1.5 ? color.new(c_confluence_medium, 75) : strength_val > 1.0 ? color.new(fib_line_color, 80) : color.new(color.gray, 85)
+                    label_text_color = strength_val > 1.0 ? color.white : fib_line_color
+                    array.push(fibLowLabels, label.new(right_boundary + 1, lo_val_disp, label_text, color=label_bg_color, textcolor=label_text_color, style=label.style_label_left, size=size.small))
+                    array.push(used_positions, lo_val_disp)
+
+// ===== CONFLUENCE ZONE DETECTION (using while loop fix) =====
+findConfluenceZones() =>
+    tolerance = syminfo.mintick * 5
+    func_zones = array.new<ConfluenceZone>() 
+    fib_levels_derived = array.new<float>() 
+    
+    conf_highs_snapshot = array.from(fib8_high, fib13_high, fib21_high, fib34_high, fib55_high)
+    conf_lows_snapshot = array.from(fib8_low, fib13_low, fib21_low, fib34_low, fib55_low)
+
+    for i = 0 to array.size(conf_highs_snapshot) - 1 
+        hi_val = array.get(conf_highs_snapshot, i) 
+        lo_val = array.get(conf_lows_snapshot, i)   
+        if not na(hi_val) and not na(lo_val)
+            priceRange = hi_val - lo_val
+            if priceRange > 0 
+                array.push(fib_levels_derived, lo_val + priceRange * 0.382)
+                array.push(fib_levels_derived, lo_val + priceRange * 0.5)
+                array.push(fib_levels_derived, lo_val + priceRange * 0.618)
+    
+    n_derived_levels = array.size(fib_levels_derived) 
+    if n_derived_levels > 1
+        processed_indices = array.new_bool(n_derived_levels, false)
+
+        for i = 0 to n_derived_levels - 1
+            if i >= n_derived_levels 
+                break 
+            if array.get(processed_indices, i) 
+                continue
+
+            price1 = array.get(fib_levels_derived, i) 
+            confluent_prices_sum = price1
+            confluent_count = 1
+            array.set(processed_indices, i, true) 
+            
+            current_j = i + 1
+            while current_j < n_derived_levels 
+                if not array.get(processed_indices, current_j) 
+                    price2 = array.get(fib_levels_derived, current_j) 
+                    if not na(price1) and not na(price2) 
+                        if math.abs(price1 - price2) <= tolerance
+                            confluent_prices_sum += price2
+                            confluent_count += 1
+                            array.set(processed_indices, current_j, true)
+                current_j += 1 
+            
+            if confluent_count >= i_confluenceThreshold
+                avg_price = confluent_prices_sum / confluent_count 
+                level = confluent_count >= 8 ? "CRITICAL" : confluent_count >= 6 ? "HIGH" : confluent_count >= 4 ? "MEDIUM" : "LOW"
+                array.push(func_zones, ConfluenceZone.new(avg_price, confluent_count, level, array.from("Multi-TF")))
+    func_zones
+
+// ===== CONFLUENCE ZONE UPDATE FREQUENCY =====
+if barstate.isconfirmed 
+    confluenceZones := findConfluenceZones()
+
+// ===== CONFLUENCE VISUALIZATION (Like the images) =====
+var array<box> confluence_boxes = array.new<box>()
+var array<label> confluence_labels = array.new<label>()
+
+if i_showConfluence and barstate.isconfirmed
+    for box_obj in confluence_boxes 
+        box.delete(box_obj)
+    for label_obj in confluence_labels 
+        label.delete(label_obj)
+    array.clear(confluence_boxes)
+    array.clear(confluence_labels)
+    
+    num_zones_to_display = math.min(array.size(confluenceZones), 11) 
+    if num_zones_to_display > 0
+        for i = 0 to num_zones_to_display - 1 
+            zone = array.get(confluenceZones, i)
+            zone_bg_color = zone.level == "CRITICAL" ? color.new(color.red, 80) : zone.level == "HIGH" ? color.new(color.red, 80) : zone.level == "MEDIUM" ? color.new(#ffeb3b, 80) : color.new(#ffeb3b, 80)
+            zone_border_color = zone.level == "CRITICAL" ? color.rgb(255, 82, 82, 50) : zone.level == "HIGH" ? color.rgb(255, 82, 82, 50) : zone.level == "MEDIUM" ? color.rgb(255, 153, 0, 50) : color.rgb(255, 235, 59, 50)
+            zone_height_viz = atr_value * 0.25 
+            
+            conf_box = box.new(bar_index - 10, zone.price + zone_height_viz, bar_index + 10, zone.price - zone_height_viz, bgcolor=zone_bg_color, border_color=zone_border_color, border_width=1)
+            array.push(confluence_boxes, conf_box)
+            
+            label_text = zone.level + " (" + str.tostring(zone.strength) + "x)"
+            conf_label = label.new(bar_index - 12, zone.price, label_text, color=zone_border_color, textcolor=color.white, style=label.style_label_right, size=size.small)
+            array.push(confluence_labels, conf_label)
+
+// ===== HELPER FUNCTIONS FOR DIVERGENCE =====
+get_nth_pivot_high_val(series_val, p_lookback_left, p_lookback_right, nth) =>
+    piv_high_price_level = ta.pivothigh(high, p_lookback_left, p_lookback_right) 
+    float nth_pivot_series_val = ta.valuewhen(not na(piv_high_price_level), series_val[p_lookback_right], nth - 1)
+    nth_pivot_series_val
+get_nth_pivot_high_price(p_lookback_left, p_lookback_right, nth) =>
+    piv_high_price_level = ta.pivothigh(high, p_lookback_left, p_lookback_right)
+    float nth_pivot_price = ta.valuewhen(not na(piv_high_price_level), high[p_lookback_right], nth - 1)
+    nth_pivot_price
+get_nth_pivot_low_val(series_val, p_lookback_left, p_lookback_right, nth) =>
+    piv_low_price_level = ta.pivotlow(low, p_lookback_left, p_lookback_right) 
+    float nth_pivot_series_val = ta.valuewhen(not na(piv_low_price_level), series_val[p_lookback_right], nth - 1)
+    nth_pivot_series_val
+get_nth_pivot_low_price(p_lookback_left, p_lookback_right, nth) =>
+    piv_low_price_level = ta.pivotlow(low, p_lookback_left, p_lookback_right)
+    float nth_pivot_price = ta.valuewhen(not na(piv_low_price_level), low[p_lookback_right], nth - 1)
+    nth_pivot_price
+
+// ===== STOCHASTIC RSI CALCULATION =====
+stoch_rsi_length = 14
+stoch_rsi_k_period = 3
+rsi_stoch_input = ta.rsi(close, stoch_rsi_length) 
+stoch_k_raw = ta.stoch(rsi_stoch_input, rsi_stoch_input, rsi_stoch_input, stoch_rsi_length) 
+stoch_rsi_k = ta.sma(stoch_k_raw, stoch_rsi_k_period) 
+
+
+// ===== SIGNAL GENERATION (Tiered Logic with Adaptive Features) =====
+var bool long_signal_bar = false
+var bool short_signal_bar = false
+
+// --- Adaptive StochRSI OB/OS Levels ---
+stoch_k_highest_adaptive = ta.highest(stoch_rsi_k, i_stochAdaptiveLookback)
+stoch_k_lowest_adaptive = ta.lowest(stoch_rsi_k, i_stochAdaptiveLookback)
+stoch_k_range_adaptive = stoch_k_highest_adaptive - stoch_k_lowest_adaptive
+stoch_k_range_adaptive := stoch_k_range_adaptive < syminfo.mintick ? syminfo.mintick : stoch_k_range_adaptive 
+adaptive_stoch_ob_level = stoch_k_lowest_adaptive + stoch_k_range_adaptive * i_stochOBPercentile
+adaptive_stoch_os_level = stoch_k_lowest_adaptive + stoch_k_range_adaptive * i_stochOSPercentile
+adaptive_stoch_mid_level = stoch_k_lowest_adaptive + stoch_k_range_adaptive * 0.50
+
+// --- Adaptive ATR Multiplier for Bar Size ---
+short_term_atr_val = ta.atr(5) 
+long_term_atr_avg_val = ta.sma(ta.atr(10), 50) 
+volatility_ratio = short_term_atr_val / (long_term_atr_avg_val + syminfo.mintick) 
+adaptive_bar_size_atr_mult = i_baseBarSizeAtrMult 
+if i_adaptiveAtrEnabled
+    adaptive_bar_size_atr_mult := volatility_ratio > 1.3 ? i_baseBarSizeAtrMult * 0.85 : 
+                                 volatility_ratio < 0.7 ? i_baseBarSizeAtrMult * 1.15 : 
+                                 i_baseBarSizeAtrMult
+
+// --- StochRSI Divergence Detection (Classic) ---
+divergence_lookback_left_stoch = 5 
+divergence_lookback_right_stoch = 3 
+prev_price_pivot_high_stoch = get_nth_pivot_high_price(divergence_lookback_left_stoch, divergence_lookback_right_stoch, 1)
+prev_stoch_rsi_k_at_price_pivot_high = get_nth_pivot_high_val(stoch_rsi_k, divergence_lookback_left_stoch, divergence_lookback_right_stoch, 1)
+bearish_stoch_rsi_divergence_classic = false
+if not na(prev_price_pivot_high_stoch) and not na(prev_stoch_rsi_k_at_price_pivot_high)
+    if high > prev_price_pivot_high_stoch and stoch_rsi_k < prev_stoch_rsi_k_at_price_pivot_high and close < open
+        bearish_stoch_rsi_divergence_classic := true
+prev_price_pivot_low_stoch = get_nth_pivot_low_price(divergence_lookback_left_stoch, divergence_lookback_right_stoch, 1)
+prev_stoch_rsi_k_at_price_pivot_low = get_nth_pivot_low_val(stoch_rsi_k, divergence_lookback_left_stoch, divergence_lookback_right_stoch, 1)
+bullish_stoch_rsi_divergence_classic = false
+if not na(prev_price_pivot_low_stoch) and not na(prev_stoch_rsi_k_at_price_pivot_low)
+    if low < prev_price_pivot_low_stoch and stoch_rsi_k > prev_stoch_rsi_k_at_price_pivot_low and close > open
+        bullish_stoch_rsi_divergence_classic := true
+
+// --- Simpler Divergence Candidate (for Tier 2) ---
+bearish_stoch_rsi_div_candidate = high > open and stoch_rsi_k < ta.highest(stoch_rsi_k, 3)[1] and close < open
+bullish_stoch_rsi_div_candidate = low < open and stoch_rsi_k > ta.lowest(stoch_rsi_k, 3)[1] and close > open
+
+// --- Nearest Confluence Zone ---
+nearestZonePrice := na
+nearestZoneDistance := 999999.0
+nearestZoneStrength := ""
+nearest_confluence_zone_upper_boundary := na
+nearest_confluence_zone_lower_boundary := na
+if array.size(confluenceZones) > 0
+    current_atr_for_signals_local = atr_value 
+    confluence_zone_signal_half_height = current_atr_for_signals_local * 0.25 
+    for i_zone_search = 0 to array.size(confluenceZones) - 1 
+        zone = array.get(confluenceZones, i_zone_search) 
+        distance_to_center = math.abs(zone.price - close) 
+        if distance_to_center < nearestZoneDistance
+            nearestZoneDistance := distance_to_center
+            nearestZonePrice := zone.price
+            nearestZoneStrength := zone.level
+            nearest_confluence_zone_upper_boundary := zone.price + confluence_zone_signal_half_height
+            nearest_confluence_zone_lower_boundary := zone.price - confluence_zone_signal_half_height
+
+// --- StochRSI Setup Conditions (Using ADAPTIVE levels) ---
+bullish_stoch_setup = stoch_rsi_k[1] < adaptive_stoch_os_level and stoch_rsi_k > stoch_rsi_k[1] and stoch_rsi_k < adaptive_stoch_mid_level 
+bearish_stoch_setup = stoch_rsi_k[1] > adaptive_stoch_ob_level and stoch_rsi_k < stoch_rsi_k[1] and stoch_rsi_k > adaptive_stoch_mid_level
+
+// --- Define Reversal Bar Pattern (Using ADAPTIVE ATR multiplier) ---
+long_level_rejection = false
+short_level_rejection = false
+bar_range = high - low
+safe_bar_range = bar_range > 0 ? bar_range : syminfo.mintick 
+is_bullish_reversal_bar = close > open and (close - low) / safe_bar_range > 0.6 and bar_range > atr_value * adaptive_bar_size_atr_mult
+is_bearish_reversal_bar = close < open and (high - close) / safe_bar_range > 0.6 and bar_range > atr_value * adaptive_bar_size_atr_mult
+
+// --- Define Exceptionally Strong Reversal Bar (for Tier 2) ---
+is_exceptionally_strong_bullish_bar = close > open and (close > high - safe_bar_range * 0.30) and bar_range > atr_value * (adaptive_bar_size_atr_mult + 0.15) 
+is_exceptionally_strong_bearish_bar = close < open and (close < low + safe_bar_range * 0.30) and bar_range > atr_value * (adaptive_bar_size_atr_mult + 0.15)
+
+// --- Level Rejection Logic ---
+// Standard Level Rejection
+if not na(nearestZonePrice) and (nearestZoneStrength == "HIGH" or nearestZoneStrength == "CRITICAL" or nearestZoneStrength == "MEDIUM")
+    zone_height_loc = nearest_confluence_zone_upper_boundary - nearest_confluence_zone_lower_boundary
+    if not na(zone_height_loc) and zone_height_loc > syminfo.mintick * 2
+        if low <= nearest_confluence_zone_lower_boundary + zone_height_loc * 0.33 
+            if is_bullish_reversal_bar and close > nearest_confluence_zone_lower_boundary 
+                long_level_rejection := true
+        if high >= nearest_confluence_zone_upper_boundary - zone_height_loc * 0.33 
+            if is_bearish_reversal_bar and close < nearest_confluence_zone_upper_boundary 
+                short_level_rejection := true
+// Fib Rejection with Sensitivity
+dynamic_fib_pierce_allowance_atr = (0.1 * i_fibSensitivity) 
+if not long_level_rejection 
+    for i_fib_rej = 0 to array.size(fib_level_lows) - 1 
+        fib_l = array.get(fib_level_lows, i_fib_rej) 
+        if not na(fib_l) and low <= fib_l + (atr_value * dynamic_fib_pierce_allowance_atr) 
+            if is_bullish_reversal_bar and close > fib_l 
+                long_level_rejection := true
+                break
+if not short_level_rejection 
+    for i_fib_rej = 0 to array.size(fib_level_highs) - 1 
+        fib_h = array.get(fib_level_highs, i_fib_rej) 
+        if not na(fib_h) and high >= fib_h - (atr_value * dynamic_fib_pierce_allowance_atr)
+            if is_bearish_reversal_bar and close < fib_h 
+                short_level_rejection := true
+                break
+
+// Exceptionally Strong Level Rejection (for Tier 2)
+long_exceptional_level_rejection = false
+short_exceptional_level_rejection = false
+if not na(nearestZonePrice) and (nearestZoneStrength == "HIGH" or nearestZoneStrength == "CRITICAL") 
+    zone_height_loc_exc = nearest_confluence_zone_upper_boundary - nearest_confluence_zone_lower_boundary
+    if not na(zone_height_loc_exc) and zone_height_loc_exc > syminfo.mintick * 2
+        if low <= nearest_confluence_zone_lower_boundary + zone_height_loc_exc * 0.5 
+            if is_exceptionally_strong_bullish_bar and close > nearest_confluence_zone_lower_boundary 
+                long_exceptional_level_rejection := true
+        if high >= nearest_confluence_zone_upper_boundary - zone_height_loc_exc * 0.5 
+            if is_exceptionally_strong_bearish_bar and close < nearest_confluence_zone_upper_boundary 
+                short_exceptional_level_rejection := true
+dynamic_fib_pierce_allowance_exc_atr = (0.05 * i_fibSensitivity) // Tighter for exceptional
+if not long_exceptional_level_rejection and i_enableTier2Signals 
+    for i_fib_exc = 0 to array.size(fib_level_lows) - 1 
+        fib_l_exc = array.get(fib_level_lows, i_fib_exc)
+        if not na(fib_l_exc) and low <= fib_l_exc + (atr_value * dynamic_fib_pierce_allowance_exc_atr) 
+            if is_exceptionally_strong_bullish_bar and close > fib_l_exc
+                long_exceptional_level_rejection := true
+                break
+if not short_exceptional_level_rejection and i_enableTier2Signals
+    for i_fib_exc = 0 to array.size(fib_level_highs) - 1 
+        fib_h_exc = array.get(fib_level_highs, i_fib_exc)
+        if not na(fib_h_exc) and high >= fib_h_exc - (atr_value * dynamic_fib_pierce_allowance_exc_atr)
+            if is_exceptionally_strong_bearish_bar and close < fib_h_exc
+                short_exceptional_level_rejection := true
+                break
+
+// --- Unified Field Context Filter (Gentle) ---
+context_ok_for_buy = unified_field < 2.0  
+context_ok_for_sell = unified_field > -2.0 
+                
+// --- Final Signal Combination (Tiered Logic) ---
+long_signal_tier1 = bullish_stoch_setup and long_level_rejection and bullish_stoch_rsi_divergence_classic and context_ok_for_buy
+short_signal_tier1 = bearish_stoch_setup and short_level_rejection and bearish_stoch_rsi_divergence_classic and context_ok_for_sell
+
+long_signal_tier2 = false
+short_signal_tier2 = false
+if i_enableTier2Signals
+    long_signal_tier2 := bullish_stoch_setup and long_exceptional_level_rejection and (bullish_stoch_rsi_div_candidate or not bullish_stoch_rsi_divergence_classic) and context_ok_for_buy and not long_signal_tier1
+    short_signal_tier2 := bearish_stoch_setup and short_exceptional_level_rejection and (bearish_stoch_rsi_div_candidate or not bearish_stoch_rsi_divergence_classic) and context_ok_for_sell and not short_signal_tier1
+
+long_signal_bar := long_signal_tier1 or long_signal_tier2
+short_signal_bar := short_signal_tier1 or short_signal_tier2
+
+// Mutual exclusivity 
+if long_signal_bar and short_signal_bar 
+    long_signal_bar := false 
+    short_signal_bar := false 
+
+if long_signal_bar or short_signal_bar
+    total_signals += 1
+
+// ===== SIGNAL VISUALIZATION (ONLY BUY/SELL) =====
+if i_showSignals
+    if long_signal_bar
+        label.new(bar_index, low - atr_value * 0.5, "BUY", 
+                 color=color.lime, textcolor=color.white, 
+                 style=label.style_label_up, size=size.normal)
+    
+    if short_signal_bar
+        label.new(bar_index, high + atr_value * 0.5, "SELL", 
+                 color=color.red, textcolor=color.white, 
+                 style=label.style_label_down, size=size.normal)
+
+// ===== NEW ENHANCED DASHBOARD =====
+var table mainDashboard = na 
+
+if i_showDashboard and barstate.islast
+    gc1 = theme_color1 
+    gc2 = theme_color2 
+    gc3 = color.orange 
+    gc4 = color.new(color.green, 0) 
+    gc5 = color.new(color.red, 0)   
+    gc6 = theme_color3 
+
+    dash_pos_val = i_dashPosition == "Top Left" ? position.top_left : 
+                 i_dashPosition == "Top Right" ? position.top_right : 
+                 i_dashPosition == "Bottom Left" ? position.bottom_left : position.bottom_right
+    
+    cols = i_dashSize == "Large" ? 5 : 4
+    rows = i_dashSize == "Large" ? 20 : i_dashSize == "Normal" ? 16 : 12  
+    
+    if not na(mainDashboard)
+        table.delete(mainDashboard)    
+    mainDashboard := table.new(dash_pos_val, cols, rows, border_width=1, border_color=color.new(gc1, 50), bgcolor=color.new(#1a1a2e, 15))    
+    
+    header_main_color = color.white
+    label_main_color = #B2B5BE  
+    value_main_color = gc1
+    bg_header_main = color.new(color.black, 20)
+    bg_section_main = color.new(color.gray, 85)
+    dash_text_size = size.small 
+    
+    row_idx = 0    
+
+    table.merge_cells(mainDashboard, 0, row_idx, cols-1, row_idx)
+    table.cell(mainDashboard, 0, row_idx, "📊 The Sequences of Fibonacci | " + syminfo.ticker, text_halign=text.align_center, text_color=header_main_color, bgcolor=bg_header_main, text_size=dash_text_size)
+    row_idx += 1    
+
+    table.merge_cells(mainDashboard, 0, row_idx, cols-1, row_idx)
+    table.cell(mainDashboard, 0, row_idx, "═══ 🎯 UNIFIED FIELD & SIGNALS ═══", text_halign=text.align_center, text_color=gc1, bgcolor=bg_section_main, text_size=dash_text_size)
+    row_idx += 1    
+    
+    table.cell(mainDashboard, 0, row_idx, "FIELD", text_color=label_main_color, text_size=dash_text_size)
+    field_strength_text_val = str.tostring(unified_field, "#.###")
+    field_emoji_val = math.abs(unified_field) > 5 ? "🌟" : math.abs(unified_field) > 2 ? "⚡" : math.abs(unified_field) > 1 ? "📊" : "😴"    
+    if i_dashSize == "Large"
+        table.cell(mainDashboard, 1, row_idx, field_emoji_val + " " + field_strength_text_val, text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size)
+        field_bars_val = int(math.min(math.abs(unified_field) / 0.5, 10))
+        field_meter_val = unified_field > 0 ? "▰" + str.repeat("█", field_bars_val) + str.repeat("░", 10 - field_bars_val) : str.repeat("░", 10 - field_bars_val) + str.repeat("█", field_bars_val) + "▰"
+        table.merge_cells(mainDashboard, 2, row_idx, cols-2, row_idx) 
+        table.cell(mainDashboard, 2, row_idx, field_meter_val, text_halign=text.align_right, text_color=unified_field > 0 ? gc4 : gc5, text_size=dash_text_size)
+    else 
+        table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx)
+        table.cell(mainDashboard, 1, row_idx, field_emoji_val + " " + field_strength_text_val, text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size)
+    row_idx += 1    
+    
+    table.cell(mainDashboard, 0, row_idx, "RESONANCE", text_color=label_main_color, text_size=dash_text_size)
+    resonance_pct_val = market_resonance * 100
+    resonance_text_val = str.tostring(resonance_pct_val, "#.#") + "%"
+    resonance_emoji_val = market_resonance > 0.5 ? "🔥" : market_resonance > 0.2 ? "📊" : "😴" 
+    table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx)
+    table.cell(mainDashboard, 1, row_idx, resonance_emoji_val + " " + resonance_text_val, text_halign=text.align_right, text_color=market_resonance > 0 ? gc4 : gc5, text_size=dash_text_size) 
+    row_idx += 1    
+    
+    quality_emoji_val = signal_quality > 0.7 ? "🌟 EXCEPTIONAL" : signal_quality > 0.5 ? "💪 STRONG" : signal_quality > 0.3 ? "👍 MODERATE" : "⚠️ WEAK"
+    quality_color_val = signal_quality > 0.7 ? gc1 : signal_quality > 0.5 ? gc4 : signal_quality > 0.3 ? gc3 : label_main_color    
+    table.cell(mainDashboard, 0, row_idx, "SIGNAL QUAL", text_color=label_main_color, text_size=dash_text_size) 
+    table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx)
+    table.cell(mainDashboard, 1, row_idx, quality_emoji_val, text_halign=text.align_right, text_color=quality_color_val, text_size=dash_text_size)
+    row_idx += 1    
+
+    table.cell(mainDashboard, 0, row_idx, "BIAS", text_color=label_main_color, text_size=dash_text_size)
+    bias_color_val = market_bias == "BULLISH" ? gc4 : market_bias == "BEARISH" ? gc5 : label_main_color
+    bias_emoji_val = market_bias == "BULLISH" ? "🐂" : market_bias == "BEARISH" ? "🐻" : "⚪"
+    table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx)
+    table.cell(mainDashboard, 1, row_idx, bias_emoji_val + " " + market_bias, text_halign=text.align_right, text_color=bias_color_val, text_size=dash_text_size)
+    row_idx += 1    
+
+    table.merge_cells(mainDashboard, 0, row_idx, cols-1, row_idx)
+    table.cell(mainDashboard, 0, row_idx, "═══ 🔗 CONFLUENCE & LEVELS ═══", text_halign=text.align_center, text_color=gc2, bgcolor=bg_section_main, text_size=dash_text_size)
+    row_idx += 1    
+
+    table.cell(mainDashboard, 0, row_idx, "ZONES", text_color=label_main_color, text_size=dash_text_size)
+    total_zones_val = array.size(confluenceZones)
+    high_crit_zones = 0
+    if total_zones_val > 0
+        for zone_idx = 0 to total_zones_val - 1
+            cz = array.get(confluenceZones, zone_idx)
+            if cz.level == "HIGH" or cz.level == "CRITICAL"
+                high_crit_zones +=1
+    table.cell(mainDashboard, 1, row_idx, str.tostring(total_zones_val) + " (" + str.tostring(high_crit_zones) + " H/C)", text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size)
+    
+    if not na(nearestZonePrice)
+        table.cell(mainDashboard, 2, row_idx, "NEAREST", text_color=label_main_color, text_size=dash_text_size)
+        table.merge_cells(mainDashboard, 3, row_idx, cols-1, row_idx) 
+        table.cell(mainDashboard, 3, row_idx, nearestZoneStrength + " @ " + str.tostring(nearestZoneDistance/atr_value, "#.#") + "ATR", text_halign=text.align_right, text_color=gc3, text_size=dash_text_size)
+    else
+        table.merge_cells(mainDashboard, 2, row_idx, cols-1, row_idx)
+        table.cell(mainDashboard, 2, row_idx, "NEAREST: N/A", text_halign=text.align_right, text_color=label_main_color, text_size=dash_text_size)
+    row_idx += 1
+
+    if i_dashSize == "Large"
+        table.merge_cells(mainDashboard, 0, row_idx, cols-1, row_idx)
+        table.cell(mainDashboard, 0, row_idx, "═══ 💡 ADAPTIVE PARAMETERS ═══", text_halign=text.align_center, text_color=gc6, bgcolor=bg_section_main, text_size=dash_text_size)
+        row_idx += 1
+        table.cell(mainDashboard, 0, row_idx, "Stoch OB", text_color=label_main_color, text_size=dash_text_size)
+        table.cell(mainDashboard, 1, row_idx, str.tostring(adaptive_stoch_ob_level, "#.0"), text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size)
+        table.cell(mainDashboard, 2, row_idx, "Stoch OS", text_color=label_main_color, text_size=dash_text_size)
+        table.merge_cells(mainDashboard, 3, row_idx, cols-1, row_idx) 
+        table.cell(mainDashboard, 3, row_idx, str.tostring(adaptive_stoch_os_level, "#.0"), text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size)
+        row_idx += 1
+        table.cell(mainDashboard, 0, row_idx, "Bar ATR Mult", text_color=label_main_color, text_size=dash_text_size)
+        table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx)
+        table.cell(mainDashboard, 1, row_idx, str.tostring(adaptive_bar_size_atr_mult, "#.00"), text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size)
+        row_idx += 1
+        table.cell(mainDashboard, 0, row_idx, "Vol Ratio", text_color=label_main_color, text_size=dash_text_size) 
+        table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx)
+        table.cell(mainDashboard, 1, row_idx, str.tostring(volatility_ratio, "#.00"), text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size)
+        row_idx += 1
+    if i_dashSize != "Small" // Show for Normal and Large
+        table.merge_cells(mainDashboard, 0, row_idx, cols-1, row_idx)
+        table.cell(mainDashboard, 0, row_idx, "═══ 🚦 SIGNAL ACTIVITY ═══", text_halign=text.align_center, text_color=gc3, bgcolor=bg_section_main, text_size=dash_text_size) // Changed header
+        row_idx += 1        
+        
+        table.cell(mainDashboard, 0, row_idx, "TOTAL SIGNALS", text_color=label_main_color, text_size=dash_text_size) // Changed label
+        table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx) // Merge to take up space formerly used by win rate
+        table.cell(mainDashboard, 1, row_idx, str.tostring(total_signals), text_halign=text.align_right, text_color=value_main_color, text_size=dash_text_size) // Display total_signals
+        row_idx += 1
+        if i_dashSize == "Large"
+            table.cell(mainDashboard, 0, row_idx, "STOCH RSI (%K)", text_color=label_main_color, text_size=dash_text_size)
+            stoch_k_text = str.tostring(stoch_rsi_k, "#.0")
+            stoch_k_color = stoch_rsi_k > adaptive_stoch_ob_level ? gc5 : stoch_rsi_k < adaptive_stoch_os_level ? gc4 : label_main_color
+            stoch_k_status = stoch_rsi_k > adaptive_stoch_ob_level ? " (OB)" : stoch_rsi_k < adaptive_stoch_os_level ? " (OS)" : " (Mid)"
+            table.merge_cells(mainDashboard, 1, row_idx, cols-1, row_idx)
+            table.cell(mainDashboard, 1, row_idx, stoch_k_text + stoch_k_status, text_halign=text.align_right, text_color=stoch_k_color, text_size=dash_text_size)
+            row_idx += 1
+
+// ===== ALERTS =====
+alertcondition(long_signal_bar, title="Fibonacci Long Signal", message="FIB Fractal MTF+: Long signal detected.")
+alertcondition(short_signal_bar, title="Fibonacci Short Signal", message="FIB Fractal MTF+: Short signal detected.")
+
+// ===== PLOTS FOR STRATEGY INTEGRATION =====
+plot(long_signal_bar ? 1 : short_signal_bar ? -1 : 0, title="Signal Direction", display=display.none)
+plot(array.size(confluenceZones), title="Confluence Count", display=display.none)
+plot(unified_field, title="Unified Field", display=display.none)
+plot(market_resonance, title="Market Resonance", display=display.none)
+plot(stoch_rsi_k, title="Stoch RSI K", display=display.none) 
